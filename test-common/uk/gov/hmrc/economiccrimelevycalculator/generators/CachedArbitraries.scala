@@ -47,7 +47,18 @@ object CachedArbitraries extends EclTestData {
       large       <- arbBandRange.arbitrary
       veryLarge   <- arbBandRange.arbitrary
       apportioned <- Gen.oneOf(true, false)
-    } yield Bands(small, medium, large, veryLarge, apportioned)
+    } yield Bands(small, Some(medium), Some(large), Some(veryLarge), apportioned = apportioned)
+  }
+
+  implicit lazy val arbNewBands: Arbitrary[Bands] = Arbitrary {
+    for {
+      small       <- arbBandRange.arbitrary
+      a           <- arbBandRange.arbitrary
+      b           <- arbBandRange.arbitrary
+      c           <- arbBandRange.arbitrary
+      d           <- arbBandRange.arbitrary
+      apportioned <- Gen.oneOf(true, false)
+    } yield Bands(small = small, a = Some(a), b = Some(b), c = Some(c), d = Some(d), apportioned = apportioned)
   }
 
   implicit lazy val arbCalculatedLiability: Arbitrary[CalculatedLiability] = Arbitrary {

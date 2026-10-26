@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.economiccrimelevycalculator
 
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import uk.gov.hmrc.economiccrimelevycalculator.base.ISpecBase
 import uk.gov.hmrc.economiccrimelevycalculator.controllers.routes
@@ -27,6 +27,24 @@ import uk.gov.hmrc.economiccrimelevycalculator.utils.ApportionmentUtils
 class CalculateLiabilityISpec extends ISpecBase {
 
   s"POST ${routes.CalculateLiabilityController.calculateLiability.url}" should {
+    def newBandRequest(
+      revenue: Long
+    ): JsObject =
+      Json.obj(
+        "amlRegulatedActivityLength" -> ApportionmentUtils.yearInDays,
+        "relevantApLength"           -> ApportionmentUtils.yearInDays,
+        "ukRevenue"                  -> revenue,
+        "year"                       -> 2026
+      )
+
+    val expected2026Bands = Bands(
+      small = BandRange(0, 10200000, 0),
+      a = Some(BandRange(10200000, 36000000, 10200)),
+      b = Some(BandRange(36000000, 500000000, 36000)),
+      c = Some(BandRange(500000000, 1000000000, 500000)),
+      d = Some(BandRange(1000000000, Long.MaxValue, 1000000))
+    )
+
     "return the calculated liability JSON based on the AP length, AML regulated activity length, UK revenue and tax year" when {
 
       "the revenue is small" in {
@@ -50,9 +68,9 @@ class CalculateLiabilityISpec extends ISpecBase {
 
         val expectedBands = Bands(
           small = BandRange(0, 10200000, 0),
-          medium = BandRange(10200000, 36000000, 10000),
-          large = BandRange(36000000, 1000000000, 36000),
-          veryLarge = BandRange(1000000000, Long.MaxValue, 250000)
+          medium = Some(BandRange(10200000, 36000000, 10000)),
+          large = Some(BandRange(36000000, 1000000000, 36000)),
+          veryLarge = Some(BandRange(1000000000, Long.MaxValue, 250000))
         )
 
         status(result)        shouldBe OK
@@ -86,9 +104,9 @@ class CalculateLiabilityISpec extends ISpecBase {
 
         val expectedBands = Bands(
           small = BandRange(0, 10200000, 0),
-          medium = BandRange(10200000, 36000000, 10000),
-          large = BandRange(36000000, 1000000000, 36000),
-          veryLarge = BandRange(1000000000, Long.MaxValue, 250000)
+          medium = Some(BandRange(10200000, 36000000, 10000)),
+          large = Some(BandRange(36000000, 1000000000, 36000)),
+          veryLarge = Some(BandRange(1000000000, Long.MaxValue, 250000))
         )
 
         status(result)        shouldBe OK
@@ -122,9 +140,9 @@ class CalculateLiabilityISpec extends ISpecBase {
 
         val expectedBands = Bands(
           small = BandRange(0, 10200000, 0),
-          medium = BandRange(10200000, 36000000, 10000),
-          large = BandRange(36000000, 1000000000, 36000),
-          veryLarge = BandRange(1000000000, Long.MaxValue, 250000)
+          medium = Some(BandRange(10200000, 36000000, 10000)),
+          large = Some(BandRange(36000000, 1000000000, 36000)),
+          veryLarge = Some(BandRange(1000000000, Long.MaxValue, 250000))
         )
 
         status(result)        shouldBe OK
@@ -158,9 +176,9 @@ class CalculateLiabilityISpec extends ISpecBase {
 
         val expectedBands = Bands(
           small = BandRange(0, 10200000, 0),
-          medium = BandRange(10200000, 36000000, 10000),
-          large = BandRange(36000000, 1000000000, 36000),
-          veryLarge = BandRange(1000000000, Long.MaxValue, 250000)
+          medium = Some(BandRange(10200000, 36000000, 10000)),
+          large = Some(BandRange(36000000, 1000000000, 36000)),
+          veryLarge = Some(BandRange(1000000000, Long.MaxValue, 250000))
         )
 
         status(result)        shouldBe OK
@@ -194,9 +212,9 @@ class CalculateLiabilityISpec extends ISpecBase {
 
         val expectedBands = Bands(
           small = BandRange(0, 10200000, 0),
-          medium = BandRange(10200000, 36000000, 10000),
-          large = BandRange(36000000, 1000000000, 36000),
-          veryLarge = BandRange(1000000000, Long.MaxValue, 500000)
+          medium = Some(BandRange(10200000, 36000000, 10000)),
+          large = Some(BandRange(36000000, 1000000000, 36000)),
+          veryLarge = Some(BandRange(1000000000, Long.MaxValue, 500000))
         )
 
         status(result)        shouldBe OK
@@ -208,6 +226,102 @@ class CalculateLiabilityISpec extends ISpecBase {
           )
         )
       }
+
+      "the revenue is Band A for 2026" in {
+
+        stubAuthorised()
+
+        lazy val result = callRoute(
+          FakeRequest(
+            routes.CalculateLiabilityController.calculateLiability
+          ).withJsonBody(
+            newBandRequest(10200000)
+          ),
+          requiresAuth = true
+        )
+
+        status(result) shouldBe OK
+
+        contentAsJson(result) shouldBe Json.toJson(
+          CalculatedLiability(
+            amountDue = EclAmount(10200),
+            bands = expected2026Bands,
+            calculatedBand = A
+          )
+        )
+      }
+      "the revenue is Band B for 2026" in {
+
+        stubAuthorised()
+
+        lazy val result = callRoute(
+          FakeRequest(
+            routes.CalculateLiabilityController.calculateLiability
+          ).withJsonBody(
+            newBandRequest(36000000)
+          ),
+          requiresAuth = true
+        )
+
+        status(result) shouldBe OK
+
+        contentAsJson(result) shouldBe Json.toJson(
+          CalculatedLiability(
+            amountDue = EclAmount(36000),
+            bands = expected2026Bands,
+            calculatedBand = B
+          )
+        )
+      }
+
+      "the revenue is Band C for 2026" in {
+
+        stubAuthorised()
+
+        lazy val result = callRoute(
+          FakeRequest(
+            routes.CalculateLiabilityController.calculateLiability
+          ).withJsonBody(
+            newBandRequest(500000000)
+          ),
+          requiresAuth = true
+        )
+
+        status(result) shouldBe OK
+
+        contentAsJson(result) shouldBe Json.toJson(
+          CalculatedLiability(
+            amountDue = EclAmount(500000),
+            bands = expected2026Bands,
+            calculatedBand = C
+          )
+        )
+      }
+
+      "the revenue is Band D for 2026" in {
+
+        stubAuthorised()
+
+        lazy val result = callRoute(
+          FakeRequest(
+            routes.CalculateLiabilityController.calculateLiability
+          ).withJsonBody(
+            newBandRequest(1000000000)
+          ),
+          requiresAuth = true
+        )
+
+        status(result) shouldBe OK
+
+        contentAsJson(result) shouldBe Json.toJson(
+          CalculatedLiability(
+            amountDue = EclAmount(1000000),
+            bands = expected2026Bands,
+            calculatedBand = D
+          )
+        )
+      }
+
     }
   }
 

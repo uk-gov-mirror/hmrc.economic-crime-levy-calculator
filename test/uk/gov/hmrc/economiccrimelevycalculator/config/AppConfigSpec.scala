@@ -49,28 +49,40 @@ class AppConfigSpec extends SpecBase {
 
     "return the correct bands when a previous year is provided" in {
       appConfig.defaultBands(2022) shouldBe Bands(
-        BandRange(0, 10200000, 0),
-        BandRange(10200000, 36000000, 10000),
-        BandRange(36000000, 1000000000, 36000),
-        BandRange(1000000000, Long.MaxValue, 250000)
+        small = BandRange(0, 10200000, 0),
+        medium = Some(BandRange(10200000, 36000000, 10000)),
+        large = Some(BandRange(36000000, 1000000000, 36000)),
+        veryLarge = Some(BandRange(1000000000, Long.MaxValue, 250000))
       )
     }
 
     "return the correct bands when a later year is provided" in {
       appConfig.defaultBands(2024) shouldBe Bands(
-        BandRange(0, 10200000, 0),
-        BandRange(10200000, 36000000, 10000),
-        BandRange(36000000, 1000000000, 36000),
-        BandRange(1000000000, Long.MaxValue, 500000)
+        small = BandRange(0, 10200000, 0),
+        medium = Some(BandRange(10200000, 36000000, 10000)),
+        large = Some(BandRange(36000000, 1000000000, 36000)),
+        veryLarge = Some(BandRange(1000000000, Long.MaxValue, 500000))
       )
     }
 
-    "return the latest bands when a year after the latest year is provided" in {
+    "return the latest new bands when a year after the latest year is provided" in {
       appConfig.defaultBands(2048) shouldBe Bands(
-        BandRange(0, 10200000, 0),
-        BandRange(10200000, 36000000, 10000),
-        BandRange(36000000, 1000000000, 36000),
-        BandRange(1000000000, Long.MaxValue, 500000)
+        small = BandRange(0, 10200000, 0),
+        a = Some(BandRange(10200000, 36000000, 10200)),
+        b = Some(BandRange(36000000, 500000000, 36000)),
+        c = Some(BandRange(500000000, 1000000000, 500000)),
+        d = Some(BandRange(1000000000, Long.MaxValue, 1000000))
+      )
+    }
+
+    "return the new bands when 2026 is provided" in {
+
+      appConfig.defaultBands(2026) shouldBe Bands(
+        small = BandRange(0, 10200000, 0),
+        a = Some(BandRange(10200000, 36000000, 10200)),
+        b = Some(BandRange(36000000, 500000000, 36000)),
+        c = Some(BandRange(500000000, 1000000000, 500000)),
+        d = Some(BandRange(1000000000, Long.MaxValue, 1000000))
       )
     }
 
